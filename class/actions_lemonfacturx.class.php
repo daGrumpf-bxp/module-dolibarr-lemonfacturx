@@ -43,6 +43,18 @@ class ActionsLemonFacturX
 			return 0;
 		}
 
+		// Ne pas injecter de Factur-X sur un brouillon. Dolibarr régénère le PDF
+		// à chaque ajout/modification de ligne d'une facture en brouillon
+		// (PROVxxx) : on rejouerait alors toute la chaîne (génération XML +
+		// validation XSD/BR + sous-process d'injection + veraPDF) à chaque ligne,
+		// pour un document non définitif. Le Factur-X n'a de sens que sur une
+		// facture validée ; à la validation, le statut passe à VALIDATED AVANT
+		// le generateDocument() de l'action confirm_valid, donc l'injection a bien
+		// lieu à ce moment-là.
+		if ((int) ($invoice->status ?? $invoice->statut ?? 0) === Facture::STATUS_DRAFT) {
+			return 0;
+		}
+
 		$file = $parameters['file'] ?? '';
 		if (empty($file) || !file_exists($file)) {
 			return 0;
